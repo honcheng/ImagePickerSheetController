@@ -266,6 +266,25 @@ extension ImagePickerSheetController: UITableViewDataSource {
             
             return 0
         }
+
+        let action = actions[indexPath.row] as ImageAction
+        if self.numberOfSelectedImages == 0 {
+            if NSString(string: action.title).length == 0 {
+                return 0
+            }
+            else {
+                return 50
+            }
+        }
+        else {
+            let secondaryTitle = action.secondaryTitle(numberOfSelectedImages)
+            if NSString(string: secondaryTitle).length == 0 {
+                return 0
+            }
+            else {
+                return 50
+            }
+        }
         
         return 50
     }
@@ -409,7 +428,34 @@ extension ImagePickerSheetController: UICollectionViewDelegate {
     public func collectionView(collectionView: UICollectionView, didDeselectItemAtIndexPath indexPath: NSIndexPath) {
         if let index = selectedImageIndices.indexOf(indexPath.section) {
             selectedImageIndices.removeAtIndex(index)
-            reloadButtons()
+//            reloadButtons()
+            
+            if enlargedPreviews {
+                enlargedPreviews = false
+                
+                self.collectionView.imagePreviewLayout.invalidationCenteredIndexPath = indexPath
+                
+                view.setNeedsLayout()
+                UIView.animateWithDuration(0.3, animations: {
+                    self.tableView.beginUpdates()
+                    self.tableView.endUpdates()
+                    self.view.layoutIfNeeded()
+                    }, completion: { finished in
+                        self.reloadButtons()
+                        self.collectionView.imagePreviewLayout.showsSupplementaryViews = true
+                })
+            }
+            else {
+                if let cell = collectionView.cellForItemAtIndexPath(indexPath) {
+                    var contentOffset = CGPointMake(cell.frame.midX - collectionView.frame.width / 2.0, 0.0)
+                    contentOffset.x = max(contentOffset.x, -collectionView.contentInset.left)
+                    contentOffset.x = min(contentOffset.x, collectionView.contentSize.width - collectionView.frame.width + collectionView.contentInset.right)
+                    
+                    collectionView.setContentOffset(contentOffset, animated: true)
+                }
+                
+                reloadButtons()
+            }
         }
         
         supplementaryViews[indexPath.section]?.selected = false
